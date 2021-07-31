@@ -21,7 +21,7 @@ class VilleIdeale():
         -----------
         driver : Selenium webdriver.
         time_sleep : int, default=1
-            Wainting time in second between requests.
+            Waiting time in second.
         verbose: bool, defaut=True
             Show progress bar.
         close_driver: bool, default=True
