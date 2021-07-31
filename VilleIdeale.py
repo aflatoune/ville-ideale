@@ -40,10 +40,10 @@ class VilleIdeale():
         self.verbose = verbose
         self.close_driver = close_driver
 
-    def close(self):
+    def _close(self):
         self.driver.close()
 
-    def create_url(self, id_city, page=1):
+    def _create_url(self, id_city, page=1):
         url_root = 'https://www.ville-ideale.fr/'
         url = url_root + id_city
 
@@ -53,7 +53,7 @@ class VilleIdeale():
 
         return url
 
-    def get_page_source(self, url, get_page_max=False):
+    def _get_page_source(self, url, get_page_max=False):
         self.driver.get(url)
         page_source = self.driver.page_source
 
@@ -63,7 +63,7 @@ class VilleIdeale():
 
         return (page_source, page_max) if get_page_max else page_source
 
-    def extract_page_info(self, page_source):
+    def _extract_page_info(self, page_source):
         d = {}
         index = 0
         r = re.compile(r"[0-9]{2}-[0-9]{2}-[0-9]{4}")
@@ -101,7 +101,7 @@ class VilleIdeale():
         page_info = pd.DataFrame.from_dict(d, orient='index')
         return page_info
 
-    def extract_all_info(self, id_city):
+    def _extract_all_info(self, id_city):
         all_info = []
         url = self.create_url(id_city)
         page_source, page_max = self.get_page_source(url, get_page_max=True)
