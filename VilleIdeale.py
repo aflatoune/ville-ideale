@@ -40,7 +40,7 @@ class VilleIdeale():
         self.verbose = verbose
         self.close_driver = close_driver
 
-    def _close(self):
+    def close(self):
         self.driver.close()
 
     def _create_url(self, id_city, page=1):
@@ -103,15 +103,15 @@ class VilleIdeale():
 
     def _extract_all_info(self, id_city):
         all_info = []
-        url = self.create_url(id_city)
-        page_source, page_max = self.get_page_source(url, get_page_max=True)
-        page_info = self.extract_page_info(page_source)
+        url = self._create_url(id_city)
+        page_source, page_max = self._get_page_source(url, get_page_max=True)
+        page_info = self._extract_page_info(page_source)
         all_info.append(page_info)
 
         for page in range(2, page_max+1):
-            url = self.create_url(id_city, page=page)
-            page_source = self.get_page_source(url)
-            page_info = self.extract_page_info(page_source)
+            url = self._create_url(id_city, page=page)
+            page_source = self._get_page_source(url)
+            page_info = self._extract_page_info(page_source)
             all_info.append(page_info)
             time.sleep(self.time_sleep)
 
@@ -124,10 +124,10 @@ class VilleIdeale():
         dict_city = {}
 
         if self.verbose:
-            cities = tqdm.tqdm(cities)
+            cities = tqdm(cities)
 
         for city in cities:
-            city_all_info = self.extract_all_info(city)
+            city_all_info = self._extract_all_info(city)
             dict_city[city] = city_all_info
 
         if self.close_driver:
