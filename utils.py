@@ -5,8 +5,6 @@ import requests
 
 from bs4 import BeautifulSoup
 from unidecode import unidecode
-from selenium import webdriver
-from selenium.webdriver.firefox.options import Options
 
 
 url_list = ['https://fr.wikipedia.org/wiki/Liste_des_communes_de_Seine-et-Marne',
@@ -18,7 +16,7 @@ url_list = ['https://fr.wikipedia.org/wiki/Liste_des_communes_de_Seine-et-Marne'
             'https://fr.wikipedia.org/wiki/Liste_des_communes_du_Val-d%27Oise']
 
 
-def scrap_city(url_list=url_list, process=True, save=False):
+def scrap_city_list(url_list=url_list, process=True, save=False):
     data = []
     for url in url_list:
         response = requests.get(url)
@@ -44,17 +42,3 @@ def scrap_city(url_list=url_list, process=True, save=False):
                   sep=';', encoding='utf-8')
     else:
         return df
-
-
-def create_webdriver(driver_path=None, active_options=False):
-    if active_options:
-        options = Options()
-        options.add_argument('--headless')
-    else:
-        options = None
-    if driver_path is not None:
-        path_driver = driver_path
-    else:
-        path_driver = 'geckodriver'
-    driver = webdriver.Firefox(executable_path=path_driver, options=options)
-    return driver
