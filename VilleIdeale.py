@@ -19,7 +19,6 @@ class VilleIdeale():
     def __init__(self,
                  driver,
                  time_sleep=2,
-                 to_df=False,
                  verbose=True,
                  close_driver=True):
         """
@@ -28,8 +27,6 @@ class VilleIdeale():
         driver : Selenium webdriver.
         time_sleep : int, default=2
             Waiting time in second.
-        to_df: bool, default=False
-            Whether to return a pandas DataFrame or a dict
         verbose: bool, defaut=True
             Show progress bar.
         close_driver: bool, default=True
@@ -37,15 +34,13 @@ class VilleIdeale():
 
         Example
         -------
-        >>>> from utils import create_webdriver
-        >>>> driver = create_webdriver()
+        >>>> driver = VilleIdeale.create_webdriver()
         >>>> ville_ideale = VilleIdeale(driver=driver)
         >>>> cities = ['morangis_91432', 'wissous_91689']
         >>>> ville_ideale.download(cities)
         """
         self.driver = driver
         self.time_sleep = time_sleep
-        self.to_df = to_df
         self.verbose = verbose
         self.close_driver = close_driver
 
@@ -88,11 +83,11 @@ class VilleIdeale():
             'quality_of_life'
         ]
         soup = BeautifulSoup(page_source, 'lxml')
-        comment = soup.find_all('div', class_='comm')
+        comments = soup.find_all('div', class_='comm')
 
-        for ct in comment:
+        for ct in comments:
             all_p = ct.find_all('p')
-            note = comment[1].find_all('td')
+            note = comments[1].find_all('td')
             scores = ct.find_all('td')
             page_info[index] = {
                 'date': r.findall(ct.span.text)[0],
@@ -107,27 +102,25 @@ class VilleIdeale():
             page_info[index].update(d_score)
             index += 1
 
+        page_info = pd.DataFrame.from_dict(page_info, orient='index')
         return page_info
 
-    def _extract_all_info(self, id_city):
-        all_info = []
+    def _extract_city_info(self, id_city):
+        city_info = []
         url = self._create_url(id_city)
         page_source, page_max = self._get_page_source(url, get_page_max=True)
         page_info = self._extract_page_info(page_source)
-        all_info.append(page_info)
+        city_info.append(page_info)
         time.sleep(self.time_sleep)
 
         for page in range(2, page_max+1):
             url = self._create_url(id_city, page=page)
             page_source = self._get_page_source(url)
             page_info = self._extract_page_info(page_source)
-            all_info.append(page_info)
+            city_info.append(page_info)
             time.sleep(self.time_sleep)
 
-        city_info = {}
-        for key in page_info.keys():
-            city_info[key] = [d[key] for d in all_info]
-
+        city_info = pd.concat(city_info, ignore_index=True)
         return city_info
 
     def download(self, cities):
@@ -139,21 +132,15 @@ class VilleIdeale():
             cities = tqdm(cities)
 
         for city in cities:
-            city_info = self._extract_all_info(city)
+            city_info = self._extract_city_info(city)
             output[city] = city_info
-
-        if self.to_df:
-            output = pd.concat({k: pd.DataFrame(v)
-                                for k, v in output.items()}, ignore_index=False)
-            output.reset_index(level=0, inplace=True)
-            output.rename(columns={"level_0": "city"}, inplace=True)
 
         if self.close_driver:
             self.close()
 
         return output
 
-    @classmethod
+    @staticmethod
     def create_webdriver(driver_path=None, active_options=False):
         if active_options:
             options = Options()
