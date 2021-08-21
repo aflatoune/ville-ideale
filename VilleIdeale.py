@@ -36,13 +36,13 @@ class VilleIdeale():
         """
         Parameters:
         -----------
-        driver : Selenium webdriver, default None.
+        driver: Selenium webdriver, default: None
             If None http requests are made with the requests library.
-        time_sleep : int, default=2
+        time_sleep : int, default: 2
             Waiting time in second.
-        verbose: bool, defaut=True
+        verbose: bool, default: True
             Show progress bar.
-        close_driver: bool, default=True
+        close_driver: bool, default: True
             Whether to close driver after downloading.
         """
         self.driver = driver
@@ -112,10 +112,10 @@ class VilleIdeale():
         page_info = pd.DataFrame.from_dict(page_info, orient='index')
         return page_info
 
-    def _extract_city_info(self, id_city, comments):
+    def _extract_city_info(self, id_city, type):
         url = self._create_url(id_city)
 
-        if comments:
+        if type == "comment":
             city_info = []
             page_source, page_max = self._get_page_source(
                 url, get_page_max=True)
@@ -129,13 +129,25 @@ class VilleIdeale():
                 city_info.append(page_info)
                 time.sleep(self.time_sleep)
             city_info = pd.concat(city_info, ignore_index=True)
-        else:
+        elif type == "average":
             page_source = self._get_page_source(url)
             city_info = self._extract_city_average(page_source)
 
         return city_info
 
-    def download(self, cities, comments=False, to_dataframe=True):
+    def download(self, cities, type="average", to_dataframe=True):
+        """
+        Download cities information.
+
+        Parameters:
+        -----------
+        cities: list, str
+            Cities of interest.
+        comments: str, "average" or "comment", default: "average"
+            Whether to download the average scores of the city (defaults) or
+            comments of the city (i.e. the comments as well as the associated
+            indivuals scores).
+        """
         self.cities = cities
         self.n_cities = len(cities)
         output = {}
@@ -143,17 +155,19 @@ class VilleIdeale():
         if self.verbose:
             cities = tqdm(cities)
 
-        if comments:
+        if type == "comment":
             for city in cities:
-                city_info = self._extract_city_info(city, comments=comments)
+                city_info = self._extract_city_info(city, type=type)
                 output[city] = city_info
-            if to_dataframe:
+        elif type == "average":
+            for city in cities:
+                city_info = self._extract_city_info(city, type=type)
+                output[city] = city_info
+
+        if to_dataframe:
+            if type == "comment":
                 output = pd.concat(output, axis=0).reset_index(drop=True)
-        else:
-            for city in cities:
-                city_info = self._extract_city_info(city, comments=comments)
-                output[city] = city_info
-            if to_dataframe:
+            elif type == "average":
                 output = pd.DataFrame.from_dict(output, orient="index")
                 output = output.reset_index().rename(columns={"index": "city"})
 
