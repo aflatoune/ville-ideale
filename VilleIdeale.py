@@ -83,7 +83,6 @@ class VilleIdeale():
                         score in zip(VilleIdeale.CRITERIA, scores)}
         average_score = soup.find('p', id='ng').text.split('/')[0].strip()
         city_average["average_score"] = average_score
-        city_average = pd.DataFrame(city_average, index=[0])
         return city_average
 
     def _extract_page_info(self, page_source):
@@ -136,7 +135,7 @@ class VilleIdeale():
 
         return city_info
 
-    def download(self, cities, comments=False):
+    def download(self, cities, comments=False, to_dataframe=True):
         self.cities = cities
         self.n_cities = len(cities)
         output = {}
@@ -148,10 +147,15 @@ class VilleIdeale():
             for city in cities:
                 city_info = self._extract_city_info(city, comments=comments)
                 output[city] = city_info
+            if to_dataframe:
+                output = pd.concat(output, axis=0).reset_index(drop=True)
         else:
             for city in cities:
                 city_info = self._extract_city_info(city, comments=comments)
                 output[city] = city_info
+            if to_dataframe:
+                output = pd.DataFrame.from_dict(output, orient="index")
+                output = output.reset_index().rename(columns={"index": "city"})
 
         if self.driver is not None and self.close_driver:
             self.close()
@@ -160,6 +164,7 @@ class VilleIdeale():
 
     @staticmethod
     def create_webdriver(driver_path=None, active_options=False, proxy=None):
+
         if active_options:
             options = Options()
             options.add_argument('--headless')
@@ -170,6 +175,7 @@ class VilleIdeale():
             path_driver = driver_path
         else:
             path_driver = 'geckodriver'
+        driver = webdriver.Firefox(
+            executable_path=path_driver, options=options)
 
-        driver = webdriver.Firefox(executable_path=path_driver, options=options)
         return driver
