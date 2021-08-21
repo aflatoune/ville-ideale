@@ -30,7 +30,7 @@ class VilleIdeale():
 
     def __init__(self,
                  driver=None,
-                 time_sleep=2,
+                 time_sleep=1,
                  verbose=True,
                  close_driver=True):
         """
@@ -38,7 +38,7 @@ class VilleIdeale():
         -----------
         driver: Selenium webdriver, default: None
             If None http requests are made with the requests library.
-        time_sleep : int, default: 2
+        time_sleep : int, default: 1
             Waiting time in second.
         verbose: bool, default: True
             Show progress bar.
@@ -76,7 +76,7 @@ class VilleIdeale():
 
         return (page_source, page_max) if get_page_max else page_source
 
-    def _extract_city_average(self, page_source):
+    def _get_city_average(self, page_source):
         soup = BeautifulSoup(page_source, 'html.parser')
         scores = soup.find('table', id='tablonotes').find_all('td')
         city_average = {crit: score.text for crit,
@@ -85,7 +85,7 @@ class VilleIdeale():
         city_average["average_score"] = average_score
         return city_average
 
-    def _extract_page_info(self, page_source):
+    def _get_page_info(self, page_source):
         page_info = {}
         index = 0
         r = re.compile(r"[0-9]{2}-[0-9]{2}-[0-9]{4}")
@@ -112,26 +112,26 @@ class VilleIdeale():
         page_info = pd.DataFrame.from_dict(page_info, orient='index')
         return page_info
 
-    def _extract_city_info(self, id_city, type):
+    def _get_city_info(self, id_city, type):
         url = self._create_url(id_city)
 
         if type == "comment":
             city_info = []
             page_source, page_max = self._get_page_source(
                 url, get_page_max=True)
-            page_info = self._extract_page_info(page_source)
+            page_info = self._get_page_info(page_source)
             city_info.append(page_info)
             time.sleep(self.time_sleep)
             for page in range(2, page_max+1):
                 url = self._create_url(id_city, page=page)
                 page_source = self._get_page_source(url)
-                page_info = self._extract_page_info(page_source)
+                page_info = self._get_page_info(page_source)
                 city_info.append(page_info)
                 time.sleep(self.time_sleep)
             city_info = pd.concat(city_info, ignore_index=True)
         elif type == "average":
             page_source = self._get_page_source(url)
-            city_info = self._extract_city_average(page_source)
+            city_info = self._get_city_average(page_source)
 
         return city_info
 
@@ -143,10 +143,12 @@ class VilleIdeale():
         -----------
         cities: list, str
             Cities of interest.
-        comments: str, "average" or "comment", default: "average"
+        type: str, "average" or "comment", default: "average"
             Whether to download the average scores of the city (defaults) or
             comments of the city (i.e. the comments as well as the associated
             indivuals scores).
+        to_dataframe: bool, default: True
+            Whether to return a pandas DataFrame or a dict.
         """
         self.cities = cities
         self.n_cities = len(cities)
@@ -157,11 +159,11 @@ class VilleIdeale():
 
         if type == "comment":
             for city in cities:
-                city_info = self._extract_city_info(city, type=type)
+                city_info = self._get_city_info(city, type=type)
                 output[city] = city_info
         elif type == "average":
             for city in cities:
-                city_info = self._extract_city_info(city, type=type)
+                city_info = self._get_city_info(city, type=type)
                 output[city] = city_info
 
         if to_dataframe:
