@@ -16,28 +16,34 @@ class VilleIdeale():
     Download comments and ratings from https://www.ville-ideale.fr/
     """
 
+    CRITERIA = [
+        'environment',
+        'transport',
+        'security',
+        'health',
+        'leisure',
+        'culture',
+        'education',
+        'shop',
+        'quality_of_life'
+    ]
+
     def __init__(self,
-                 driver,
+                 driver=None,
                  time_sleep=2,
                  verbose=True,
                  close_driver=True):
         """
         Parameters:
         -----------
-        driver : Selenium webdriver.
+        driver : Selenium webdriver, default None.
+            If None http requests are made with the requests library.
         time_sleep : int, default=2
             Waiting time in second.
         verbose: bool, defaut=True
             Show progress bar.
         close_driver: bool, default=True
-            Whether to close driver after downloading
-
-        Example
-        -------
-        >>>> driver = VilleIdeale.create_webdriver()
-        >>>> ville_ideale = VilleIdeale(driver=driver)
-        >>>> cities = ['morangis_91432', 'wissous_91689']
-        >>>> ville_ideale.download(cities)
+            Whether to close driver after downloading.
         """
         self.driver = driver
         self.time_sleep = time_sleep
@@ -58,8 +64,11 @@ class VilleIdeale():
         return url
 
     def _get_page_source(self, url, get_page_max=False):
-        self.driver.get(url)
-        page_source = self.driver.page_source
+        if self.driver is not None:
+            self.driver.get(url)
+            page_source = self.driver.page_source
+        else:
+            page_source = requests.get(url).text
 
         if get_page_max:
             page_max = int(BeautifulSoup(page_source, 'lxml').find(
@@ -67,21 +76,20 @@ class VilleIdeale():
 
         return (page_source, page_max) if get_page_max else page_source
 
+    def _extract_city_average(self, page_source):
+        soup = BeautifulSoup(page_source, 'html.parser')
+        scores = soup.find('table', id='tablonotes').find_all('td')
+        city_average = {crit: score.text for crit,
+                        score in zip(VilleIdeale.CRITERIA, scores)}
+        average_score = soup.find('p', id='ng').text.split('/')[0].strip()
+        city_average["average_score"] = average_score
+        city_average = pd.DataFrame(city_average, index=[0])
+        return city_average
+
     def _extract_page_info(self, page_source):
         page_info = {}
         index = 0
         r = re.compile(r"[0-9]{2}-[0-9]{2}-[0-9]{4}")
-        criteria = [
-            'environment',
-            'transport',
-            'security',
-            'health',
-            'leisure',
-            'culture',
-            'education',
-            'shop',
-            'quality_of_life'
-        ]
         soup = BeautifulSoup(page_source, 'lxml')
         comments = soup.find_all('div', class_='comm')
 
@@ -98,32 +106,37 @@ class VilleIdeale():
                 'feedback_neg': all_p[3].find_all('strong')[1].text
             }
             d_score = {crit: score.text for crit,
-                       score in zip(criteria, scores)}
+                       score in zip(VilleIdeale.CRITERIA, scores)}
             page_info[index].update(d_score)
             index += 1
 
         page_info = pd.DataFrame.from_dict(page_info, orient='index')
         return page_info
 
-    def _extract_city_info(self, id_city):
-        city_info = []
+    def _extract_city_info(self, id_city, comments):
         url = self._create_url(id_city)
-        page_source, page_max = self._get_page_source(url, get_page_max=True)
-        page_info = self._extract_page_info(page_source)
-        city_info.append(page_info)
-        time.sleep(self.time_sleep)
 
-        for page in range(2, page_max+1):
-            url = self._create_url(id_city, page=page)
-            page_source = self._get_page_source(url)
+        if comments:
+            city_info = []
+            page_source, page_max = self._get_page_source(
+                url, get_page_max=True)
             page_info = self._extract_page_info(page_source)
             city_info.append(page_info)
             time.sleep(self.time_sleep)
+            for page in range(2, page_max+1):
+                url = self._create_url(id_city, page=page)
+                page_source = self._get_page_source(url)
+                page_info = self._extract_page_info(page_source)
+                city_info.append(page_info)
+                time.sleep(self.time_sleep)
+            city_info = pd.concat(city_info, ignore_index=True)
+        else:
+            page_source = self._get_page_source(url)
+            city_info = self._extract_city_average(page_source)
 
-        city_info = pd.concat(city_info, ignore_index=True)
         return city_info
 
-    def download(self, cities):
+    def download(self, cities, comments=False):
         self.cities = cities
         self.n_cities = len(cities)
         output = {}
@@ -131,25 +144,32 @@ class VilleIdeale():
         if self.verbose:
             cities = tqdm(cities)
 
-        for city in cities:
-            city_info = self._extract_city_info(city)
-            output[city] = city_info
+        if comments:
+            for city in cities:
+                city_info = self._extract_city_info(city, comments=comments)
+                output[city] = city_info
+        else:
+            for city in cities:
+                city_info = self._extract_city_info(city, comments=comments)
+                output[city] = city_info
 
-        if self.close_driver:
+        if self.driver is not None and self.close_driver:
             self.close()
 
         return output
 
     @staticmethod
-    def create_webdriver(driver_path=None, active_options=False):
+    def create_webdriver(driver_path=None, active_options=False, proxy=None):
         if active_options:
             options = Options()
             options.add_argument('--headless')
         else:
             options = None
+
         if driver_path is not None:
             path_driver = driver_path
         else:
             path_driver = 'geckodriver'
+
         driver = webdriver.Firefox(executable_path=path_driver, options=options)
         return driver
