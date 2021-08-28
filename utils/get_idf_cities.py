@@ -16,16 +16,13 @@ URL_DICT = {77: 'https://fr.wikipedia.org/wiki/Liste_des_communes_de_Seine-et-Ma
             95: 'https://fr.wikipedia.org/wiki/Liste_des_communes_du_Val-d%27Oise'}
 
 
-def get_idf_cities(dep=[77, 78, 91, 92, 93, 94, 95],
+def get_idf_cities(url_dict = URL_DICT,
                    process=True,
                    save=False,
                    path=None):
-    for key in list(URL_DICT):
-        if key not in dep:
-            URL_DICT.pop(key)
 
     data = []
-    for url in URL_DICT.values():
+    for url in url_dict.values():
         response = requests.get(url)
         soup = BeautifulSoup(response.content, 'lxml')
         table_rows = soup.find_all('table')[1].find_all('tr')
