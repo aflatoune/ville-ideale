@@ -20,7 +20,6 @@ def get_idf_cities(url_dict = URL_DICT,
                    process=True,
                    save=False,
                    path=None):
-
     data = []
     for url in url_dict.values():
         response = requests.get(url)
@@ -50,7 +49,11 @@ def get_idf_cities(url_dict = URL_DICT,
                 pass
             else:
                 os.mkdir("data/")
-            df.to_csv(os.path.join('data', 'city_info.csv'),
+            df.to_csv(os.path.join('data', 'city_list.csv'),
                       sep=';', encoding='utf-8')
     else:
         return df
+
+
+if __name__ == "__main__":
+    get_idf_cities(save=True)
