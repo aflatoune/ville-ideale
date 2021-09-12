@@ -4,6 +4,7 @@ import re
 import time
 import requests
 import pandas as pd
+import logging as lg
 
 from tqdm import tqdm
 from bs4 import BeautifulSoup
@@ -160,12 +161,20 @@ class VilleIdeale():
 
         if info == "comment":
             for city in cities:
-                city_info = self._get_city_info(city, info=info)
-                output[city] = city_info
+                try:
+                    city_info = self._get_city_info(city, info=info)
+                    output[city] = city_info
+                except AttributeError:
+                    lg.warning(
+                        f"No information obtained for {city}. Probably an IP ban.")
         elif info == "average":
             for city in cities:
-                city_info = self._get_city_info(city, info=info)
-                output[city] = city_info
+                try:
+                    city_info = self._get_city_info(city, info=info)
+                    output[city] = city_info
+                except AttributeError:
+                    lg.warning(
+                        f"No information obtained for {city}. Probably an IP ban")
 
         if to_dataframe:
             if info == "comment":
