@@ -1,4 +1,4 @@
-import schedule
+#import schedule
 import pandas as pd
 from utils.VilleIdeale import VilleIdeale
 
@@ -26,7 +26,7 @@ def update_city_info(path, df):
 
 def main():
     vi = VilleIdeale(verbose=False)
-    cities = read_city_list("data/city_list.csv", update=True)
+    cities = read_city_list("data/city_list.csv")
     output = vi.download(cities)
     update_city_list("data/city_list.csv", n=output.shape[0])
     update_city_info("data/city_info.csv", output)
