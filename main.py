@@ -36,7 +36,7 @@ def main():
     selenium = args.selenium
 
     if selenium:
-        driver = VilleIdeale.create_webdriver()
+        driver = VilleIdeale.create_webdriver(active_options=True)
         vi = VilleIdeale(driver=driver, verbose=False)
     else:
         vi = VilleIdeale(verbose=False)

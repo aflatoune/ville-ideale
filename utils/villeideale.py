@@ -189,7 +189,7 @@ class VilleIdeale():
         return output
 
     @staticmethod
-    def create_webdriver(driver_path=None, active_options=False, proxy=None):
+    def create_webdriver(driver_path=None, active_options=False):
 
         if active_options:
             options = Options()
