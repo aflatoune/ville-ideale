@@ -1,9 +1,16 @@
-#import schedule
+import argparse
 import pandas as pd
-from utils.VilleIdeale import VilleIdeale
+from utils.villeideale import VilleIdeale
 
 
-def read_city_list(path, n=10):
+def parse_arguments():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--selenium", action="store_true",
+                        help="Whether to use selenium or not.")
+    return parser.parse_args()
+
+
+def read_city_list(path, n=20):
     city_list = pd.read_csv(path, sep=";", index_col=0)
 
     if n > city_list.shape[0]:
@@ -25,7 +32,15 @@ def update_city_info(path, df):
 
 
 def main():
-    vi = VilleIdeale(verbose=False)
+    args = parse_arguments()
+    selenium = args.selenium
+
+    if selenium:
+        driver = VilleIdeale.create_webdriver()
+        vi = VilleIdeale(driver=driver, verbose=False)
+    else:
+        vi = VilleIdeale(verbose=False)
+
     cities = read_city_list("data/city_list.csv")
     output = vi.download(cities)
     update_city_list("data/city_list.csv", n=output.shape[0])
