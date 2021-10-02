@@ -10,7 +10,7 @@ from dash import html
 from dash.dependencies import Input, Output
 
 
-with open("app/data/geo_info.geojson", encoding="utf-8") as f:
+with open("data/geo_info.geojson", encoding="utf-8") as f:
     gj = json.load(f)
 
 d = {}
@@ -18,7 +18,7 @@ for sub_d in gj["features"]:
     d[sub_d["properties"]["code"]] = sub_d["properties"]["nom"]
 d = pd.DataFrame.from_dict(d, orient="index")
 
-city_info = pd.read_csv("app/data/city_info.csv", decimal=",",
+city_info = pd.read_csv("data/city_info.csv", decimal=",",
                         sep=",", index_col=0).reset_index(drop=True)
 city_info["code Insee"] = city_info["city"].map(lambda x: x[-5:])
 city_info = pd.merge(city_info, d, how='left', left_on=[
@@ -138,4 +138,4 @@ def update_table(page_current, page_size, sort_by):
 
 
 if __name__ == "__main__":
-    app.run_server(debug=True)
+    app.run_server(host="0.0.0.0", port=8050, debug=True)
