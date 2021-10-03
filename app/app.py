@@ -37,7 +37,7 @@ city_info.rename(columns={0: "Commune",
                  inplace=True)
 
 CRITERIA = city_info.columns[1:-2].to_list()
-COLS = CRITERIA + ["Commune"]
+COLS = ["Commune"] + CRITERIA
 
 
 app = dash.Dash(__name__)
